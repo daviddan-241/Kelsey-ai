@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#090b16" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="NEXUS" />
+  <title>NEXUS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="history-overlay" onclick="closeHistory()"></div>
+<aside id="history-drawer">
+  <div class="sidebar-header">
+    <span class="sidebar-brand">NEXUS</span>
+    <button class="sidebar-close-btn" onclick="closeHistory()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-nav-item" onclick="closeHistory()">
+      <svg class="sidebar-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Chats
+    </button>
+    <button class="sidebar-nav-item" onclick="toggleImageGallery();closeHistory()">
+      <svg class="sidebar-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21"/></svg>
+      Image Gallery
+    </button>
+    <button class="sidebar-nav-item" onclick="toggleCodePreview();closeHistory()">
+      <svg class="sidebar-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Code Files
+    </button>
+    <button class="sidebar-nav-item" onclick="toggleProcMonitor();closeHistory()">
+      <svg class="sidebar-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      Live Servers
+    </button>
+  </nav>
+  <div class="sidebar-git-section">
+    <div class="sidebar-git-label">Import GitHub Repo</div>
+    <div class="sidebar-git-row">
+      <input id="git-url-input" class="sidebar-git-input" type="text" placeholder="user/repo or full URL" autocomplete="off" spellcheck="false" />
+      <button id="git-import-btn" class="sidebar-git-btn" onclick="importGitRepo()">Clone</button>
+    </div>
+    <div id="git-import-status" class="sidebar-git-status"></div>
+  </div>
+  <div id="github-import-bar" style="display:none">
+    <span class="git-import-label"></span>
+    <button onclick="importGitRepo()"></button>
+  </div>
+  <div class="sidebar-section-label">Recents</div>
+  <div id="history-list"></div>
+  <div id="agent-bar" style="display:none">
+    <div class="agent-roster">
+      <div class="agent-chip" data-agent="orchestrator"></div>
+      <div class="agent-chip" data-agent="coder"></div>
+      <div class="agent-chip" data-agent="debug"></div>
+      <div class="agent-chip" data-agent="terminal"></div>
+      <div class="agent-chip" data-agent="files"></div>
+      <div class="agent-chip" data-agent="deploy"></div>
+      <div class="agent-chip" data-agent="analysis"></div>
+      <div class="agent-chip" data-agent="memory"></div>
+      <div class="agent-chip" data-agent="image"></div>
+      <div class="agent-chip" data-agent="search"></div>
+      <div class="agent-chip" data-agent="security"></div>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">N</div>
+      <span class="sidebar-user-name">NEXUS</span>
+    </div>
+    <button class="sidebar-new-chat-btn" onclick="newChat()" title="New chat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- CODE PREVIEW DRAWER -->
+<div id="code-preview-overlay" onclick="closeCodePreview()"></div>
+<aside id="code-preview-drawer">
+  <div class="cpd-header">
+    <div class="cpd-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Code Files
+      <span id="cpd-count" class="badge">0</span>
+    </div>
+    <div style="display:flex;gap:5px">
+      <button class="sm-btn" onclick="downloadSessionZip()">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        ZIP
+      </button>
+      <button class="icon-btn sm" onclick="closeCodePreview()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="cpd-tabs"></div>
+  <div id="cpd-body"></div>
+</aside>
+
+<!-- IMAGE GALLERY DRAWER -->
+<div id="image-gallery-overlay" onclick="closeImageGallery()"></div>
+<aside id="image-gallery-drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--purple)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21"/></svg>
+      Images
+      <span id="gallery-count" class="badge">0</span>
+    </div>
+    <button class="icon-btn sm" onclick="closeImageGallery()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="img-gen-panel">
+    <div class="img-gen-title">Generate Image</div>
+    <textarea id="img-prompt" class="img-prompt-input" placeholder="Describe the image..." rows="2"></textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <select id="img-style" class="img-style-select">
+        <option value="realistic">Realistic</option>
+        <option value="photographic">Photographic</option>
+        <option value="artistic">Artistic</option>
+        <option value="anime">Anime</option>
+        <option value="cartoon">Cartoon</option>
+        <option value="cyberpunk">Cyberpunk</option>
+      </select>
+      <select id="img-size" class="img-style-select">
+        <option value="1024x1024">1024×1024</option>
+        <option value="1280x720">1280×720</option>
+        <option value="768x1024">768×1024</option>
+        <option value="512x512">512×512</option>
+      </select>
+      <button class="img-gen-btn" id="img-gen-btn" onclick="generateImageDirect()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Generate
+      </button>
+    </div>
+  </div>
+  <div id="gallery-grid"></div>
+</aside>
+
+<!-- IMAGE LIGHTBOX -->
+<div id="img-lightbox-overlay" onclick="closeImgLightbox()">
+  <div id="img-lightbox" onclick="event.stopPropagation()">
+    <button class="img-lb-close" onclick="closeImgLightbox()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img id="img-lightbox-img" src="" alt="" />
+    <div id="img-lightbox-meta"></div>
+    <div id="img-lightbox-actions">
+      <a id="img-lightbox-dl" class="img-lb-btn" download="nexus-image.jpg">⬇ Download</a>
+      <button class="img-lb-btn secondary" onclick="closeImgLightbox()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS MONITOR -->
+<div id="proc-monitor-panel">
+  <div class="proc-monitor-header">
+    <div class="proc-monitor-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Live Servers
+      <span id="pm-server-count" style="font-size:10px;font-weight:400;color:var(--text3)"></span>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="icon-btn sm" onclick="fetchProcesses()" title="Refresh">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.26"/></svg>
+      </button>
+      <button class="icon-btn sm" onclick="closeProcMonitor()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="proc-monitor-body" id="proc-monitor-body">
+    <div class="proc-monitor-empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.18;margin-bottom:8px"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      <div>No servers running</div>
+    </div>
+  </div>
+</div>
+
+<!-- GITHUB MODAL -->
+<div id="gh-modal-overlay">
+  <div id="gh-modal">
+    <div id="gh-modal-header">
+      <div id="gh-modal-steps">
+        <div class="gh-step active" id="gh-step-1">1</div>
+        <div class="gh-step-line"></div>
+        <div class="gh-step" id="gh-step-2">2</div>
+        <div class="gh-step-line"></div>
+        <div class="gh-step" id="gh-step-3">3</div>
+      </div>
+      <button class="gh-modal-x" onclick="ghModalCancel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="gh-modal-body"></div>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div id="preview-overlay" onclick="closePreview()"></div>
+<div id="preview-modal">
+  <div id="preview-toolbar">
+    <div id="preview-title">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      <span id="preview-label">Live Preview</span>
+    </div>
+    <div id="preview-actions">
+      <button class="preview-btn" onclick="openPreviewTab()" title="Open in tab">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </button>
+      <button class="preview-btn" onclick="downloadPreview()" title="Download">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="preview-btn" onclick="togglePreviewSize()" title="Fullscreen">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </button>
+      <button class="preview-btn preview-close-btn" onclick="closePreview()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="preview-viewport-bar">
+    <button class="viewport-btn active" onclick="setViewport('desktop',this)" title="Desktop">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+    </button>
+    <button class="viewport-btn" onclick="setViewport('tablet',this)" title="Tablet">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    </button>
+    <button class="viewport-btn" onclick="setViewport('mobile',this)" title="Mobile">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    </button>
+    <span id="preview-dims"></span>
+  </div>
+  <div id="preview-frame-wrap">
+    <iframe id="preview-iframe" sandbox="allow-scripts allow-same-origin allow-forms" loading="lazy"></iframe>
+  </div>
+</div>
+
+<!-- SPLIT PREVIEW -->
+<div id="split-preview-panel">
+  <div id="split-preview-bar">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue);flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      <span id="split-preview-label" style="font-size:12px;font-weight:600;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Preview</span>
+      <span id="split-preview-status" style="font-size:10px;color:var(--text3)"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="viewport-btn active" onclick="setSplitViewport('desktop',this)" title="Desktop">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      </button>
+      <button class="viewport-btn" onclick="setSplitViewport('mobile',this)" title="Mobile">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </button>
+      <button class="icon-btn sm" onclick="refreshSplitPreview()" title="Refresh">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.26"/></svg>
+      </button>
+      <button class="icon-btn sm" onclick="popoutSplitPreview()" title="New tab">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </button>
+      <button class="icon-btn sm" onclick="closeSplitPreview()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <iframe id="split-preview-iframe" sandbox="allow-scripts allow-same-origin allow-forms" loading="lazy"></iframe>
+</div>
+
+<!-- PLUS MENU -->
+<div id="plus-menu-overlay" onclick="closePlusMenu()"></div>
+<div id="plus-menu">
+  <div class="pm-handle"></div>
+  <div class="pm-grid">
+    <button class="pm-grid-btn attach-btn" onclick="closePlusMenu();document.getElementById('file-input').click()">
+      <span class="pm-grid-icon">📎</span>
+      <span>Attach</span>
+    </button>
+    <button class="pm-grid-btn" onclick="closePlusMenu();toggleImageGallery()">
+      <span class="pm-grid-icon">🎨</span>
+      <span>Gallery</span>
+    </button>
+    <button class="pm-grid-btn" onclick="closePlusMenu();toggleCodePreview()">
+      <span class="pm-grid-icon">💻</span>
+      <span>Code</span>
+    </button>
+    <button class="pm-grid-btn" onclick="closePlusMenu();toggleProcMonitor()">
+      <span class="pm-grid-icon">🌐</span>
+      <span>Servers</span>
+    </button>
+  </div>
+  <div class="pm-divider"></div>
+  <button class="pm-list-item" id="terminal-toggle-btn" onclick="closePlusMenu();toggleTerminal()">
+    <span class="pm-list-icon">⬛</span>
+    Terminal
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <button class="pm-list-item" id="live-console-btn" onclick="closePlusMenu();toggleLiveConsole()">
+    <span class="pm-list-icon">🖥</span>
+    Live Console
+    <span class="pm-list-right" id="console-exec-count" style="font-size:10px;color:var(--text3)">0 runs</span>
+  </button>
+  <button class="pm-list-item" id="kali-live-btn" onclick="closePlusMenu();toggleKaliLive()">
+    <span class="pm-list-icon">🐉</span>
+    Kali Live Stream
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <div class="pm-divider"></div>
+  <button class="pm-list-item" id="gallery-btn" onclick="closePlusMenu();toggleImageGallery()">
+    <span class="pm-list-icon">🖼</span>
+    Image Gallery
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <button class="pm-list-item" onclick="closePlusMenu();pushToGitHub()">
+    <span class="pm-list-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    </span>
+    Push to GitHub
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <button class="pm-list-item" id="notif-btn" onclick="closePlusMenu();requestPushPermission()">
+    <span class="pm-list-icon">🔔</span>
+    Notifications
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <button class="pm-list-item" onclick="closePlusMenu();clearChat()">
+    <span class="pm-list-icon">🗑</span>
+    Clear Chat
+    <span class="pm-list-right">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+  </button>
+  <button class="pm-list-item" onclick="closePlusMenu();toggleTasksPanel()">
+    <span class="pm-list-icon">⚙️</span>
+    Background Tasks
+    <span class="pm-list-right" id="pm-tasks-count" style="font-size:10px;color:var(--blue)"></span>
+  </button>
+  <!-- GIT CLONE SECTION -->
+  <div class="pm-git-section">
+    <div class="pm-git-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      Clone GitHub Repo
+    </div>
+    <div class="pm-git-row">
+      <input class="pm-git-input" id="pm-git-url" type="text" placeholder="github.com/user/repo or full URL" autocomplete="off"/>
+      <button class="pm-git-btn" id="pm-git-clone-btn" onclick="pmCloneRepo()">Clone</button>
+    </div>
+    <div class="pm-git-status" id="pm-git-status"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header">
+    <div class="header-left">
+      <button class="ham-btn" onclick="openHistory()" title="Menu" aria-label="Open menu">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="header-center">
+      <span class="brand-name">NEXUS</span>
+      <div id="status-pill" class="status-pill ready" title="Status">
+        <span class="status-dot"></span>
+        <span id="status-text">Ready</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="tasks-header-btn" onclick="toggleTasksPanel()" title="Background tasks">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="tasks-running-badge" id="tasks-running-badge"></span>
+      </button>
+      <button class="icon-btn" id="proc-monitor-btn" onclick="toggleProcMonitor()" title="Live servers">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <polyline points="8 21 12 17 16 21"/>
+          <circle cx="12" cy="10" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+        <span id="proc-count-badge" class="proc-count-badge" style="display:none">0</span>
+      </button>
+      <button class="new-chat-header-btn" onclick="newChat()" title="New chat" aria-label="New chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- BACKGROUND TASKS PANEL -->
+  <div id="tasks-panel">
+    <div class="tasks-panel-header">
+      <div class="tasks-panel-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Background Tasks
+        <span id="tasks-panel-count" style="font-size:10px;color:var(--text3)"></span>
+      </div>
+      <button class="icon-btn" onclick="toggleTasksPanel()" style="width:22px;height:22px" title="Close">✕</button>
+    </div>
+    <div class="tasks-panel-body" id="tasks-panel-body">
+      <div class="tasks-panel-empty">No tasks yet.<br>Tasks survive page refresh &amp; server restarts.</div>
+    </div>
+    <div class="tasks-panel-footer">
+      <button class="tasks-new-btn" onclick="toggleTasksPanel();document.getElementById('chat-input').focus()">+ New Task</button>
+      <button class="tasks-new-btn" style="background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25)" onclick="loadTasksPanel()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- SCROLL BTN -->
+  <button id="scroll-bottom-btn" onclick="scrollToBottom()" aria-label="Scroll to bottom">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </button>
+
+  <!-- CHAT AREA -->
+  <div id="chat-area">
+
+    <!-- EMPTY STATE — gradient + subtle action hints -->
+    <div id="empty-state">
+      <div class="nexus-gradient" aria-hidden="true"></div>
+      <div class="empty-hints" id="empty-hints">
+        <button class="empty-hint eh-blue" onclick="insertHint('Build a full-stack web app')">🧑‍💻 Build app</button>
+        <button class="empty-hint eh-purple" onclick="insertHint('Write and execute Python code')">⚡ Run code</button>
+        <button class="empty-hint eh-gold" onclick="insertHint('Generate an image of')">🎨 Generate image</button>
+        <button class="empty-hint eh-cyan" onclick="insertHint('Search the web for')">🔍 Research</button>
+        <button class="empty-hint eh-green" onclick="insertHint('Security scan on scanme.nmap.org')">🛡 Security scan</button>
+      </div>
+    </div>
+
+    <div id="messages"></div>
+  </div>
+
+  <!-- FILE BAR -->
+  <div id="file-bar" style="display:none">
+    <div id="file-chips"></div>
+  </div>
+
+  <!-- INPUT AREA -->
+  <div id="input-area">
+    <div class="input-container">
+      <textarea
+        id="chat-input"
+        placeholder="Message NEXUS..."
+        rows="1"
+        autofocus
+        autocorrect="off"
+        autocapitalize="sentences"
+        spellcheck="true"
+      ></textarea>
+      <div class="input-toolbar">
+        <div class="input-toolbar-left">
+          <button
+            class="plus-btn attach-btn"
+            id="plus-menu-btn"
+            onclick="togglePlusMenu()"
+            title="Tools & attachments"
+            aria-label="Open tools menu"
+          >+</button>
+          <input type="file" id="file-input" style="display:none" multiple onchange="handleFileSelect(this)" />
+          <div style="position:relative">
+            <button class="mode-chip" id="mode-chip-btn" onclick="toggleModeMenu()" aria-haspopup="listbox">
+              <span id="mode-chip-label">Orchestrate</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="mode-dropdown hidden" id="mode-dropdown" role="listbox">
+              <div class="mode-dropdown-item active" id="mode-opt-orchestrate" onclick="selectMode('orchestrate','Orchestrate',this)" role="option" aria-selected="true">
+                <span class="mode-item-name">Orchestrate <svg class="mode-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="mode-item-desc">Full multi-agent orchestration</span>
+              </div>
+              <div class="mode-dropdown-item" id="mode-opt-plan" onclick="selectMode('plan','Plan',this)" role="option">
+                <span class="mode-item-name">Plan <svg class="mode-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="mode-item-desc">Discuss before building</span>
+              </div>
+              <div class="mode-dropdown-item" id="mode-opt-code" onclick="selectMode('code','Code',this)" role="option">
+                <span class="mode-item-name">Code <svg class="mode-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="mode-item-desc">Code and run directly</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="input-toolbar-right">
+          <button id="tts-btn" onclick="toggleTTS()" title="Text to speech" class="tts-btn" aria-label="Toggle text to speech">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+          </button>
+          <button id="voice-btn" onclick="toggleVoice()" title="Voice input" class="voice-btn" aria-label="Voice input">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button id="send-btn" onclick="sendMessage()" title="Send" disabled aria-label="Send message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CONSOLE -->
+  <div id="live-console-panel">
+    <div id="live-console-bar">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:13px">🖥</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">Live Console</span>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="sm-btn" onclick="consoleClear()">Clear</button>
+        <button class="icon-btn sm" onclick="toggleLiveConsole()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="live-console-output"></div>
+  </div>
+
+  <!-- KALI LIVE — IDs match app.js exactly -->
+  <div id="kali-live-panel">
+    <div id="kali-live-bar">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:14px">🐉</span>
+        <span style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:.04em">KALI LIVE</span>
+        <span id="kali-live-status" class="kali-live-dot"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span id="kali-live-stats" class="kali-live-stats">Ready</span>
+        <button class="sm-btn" onclick="kaliLiveSendToChat()" style="font-size:10px">→ Chat</button>
+        <button class="sm-btn" onclick="kaliLiveCopy()" style="font-size:10px">Copy</button>
+        <button class="icon-btn sm" onclick="toggleKaliLive()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="kali-live-inputs">
+      <div class="kali-live-row">
+        <label class="kali-live-label">Target</label>
+        <input id="kali-live-target" type="text" class="kali-live-input" placeholder="192.168.1.1  or  scanme.nmap.org" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="kali-live-row">
+        <label class="kali-live-label">Command</label>
+        <div style="display:flex;gap:6px;flex:1">
+          <input id="kali-live-cmd" type="text" class="kali-live-input" placeholder="nmap -sV -T4 {target}" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')window.runKaliLive()" />
+          <button class="kali-live-run" id="kali-live-run" onclick="window.runKaliLive()">▶ Run</button>
+          <button class="kali-live-stop" id="kali-live-stop" onclick="window.kaliLiveStop()">■ Stop</button>
+        </div>
+      </div>
+      <div class="kali-preset-row">
+        <span style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Quick:</span>
+        <button class="kali-preset" onclick="window.setKaliPreset('nmap -sV -T4 {target}')">nmap</button>
+        <button class="kali-preset" onclick="window.setKaliPreset('curl -I {target}')">curl</button>
+        <button class="kali-preset" onclick="window.setKaliPreset('whois {target}')">whois</button>
+        <button class="kali-preset" onclick="window.setKaliPreset('dig {target}')">dig</button>
+        <button class="kali-preset" onclick="window.setKaliPreset('traceroute {target}')">traceroute</button>
+        <button class="kali-preset" onclick="window.setKaliPreset('nikto -h {target}')">nikto</button>
+      </div>
+    </div>
+    <div id="kali-live-output"></div>
+  </div>
+
+  <!-- TERMINAL — IDs match app.js exactly -->
+  <div id="terminal-panel">
+    <div id="terminal-bar">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:14px">⬛</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">Terminal</span>
+        <span style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="term-cwd"></span>
+        <span id="kali-badge" class="kali-badge" title="Kali status"></span>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="sm-btn" onclick="termNewSession()" style="font-size:10px">New session</button>
+        <button class="sm-btn" onclick="termClear()">Clear</button>
+        <button class="icon-btn sm" onclick="toggleTerminal()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="terminal-output"></div>
+    <div id="terminal-input-row">
+      <span class="terminal-prompt">$</span>
+      <input id="terminal-input" type="text" placeholder="Enter command..." autocomplete="off" spellcheck="false" />
+      <button class="term-run-btn" onclick="termSubmit()">Run</button>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+// ── PLUS MENU ──
+let _plusOpen = false;
+function togglePlusMenu() {
+  _plusOpen = !_plusOpen;
+  document.getElementById('plus-menu').classList.toggle('open', _plusOpen);
+  document.getElementById('plus-menu-overlay').classList.toggle('open', _plusOpen);
+  document.getElementById('plus-menu-btn').classList.toggle('open', _plusOpen);
+}
+function closePlusMenu() {
+  _plusOpen = false;
+  document.getElementById('plus-menu').classList.remove('open');
+  document.getElementById('plus-menu-overlay').classList.remove('open');
+  document.getElementById('plus-menu-btn')?.classList.remove('open');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (_plusOpen) { closePlusMenu(); return; }
+    if (_modeOpen) { closeModeMenu(); }
+  }
+});
+
+// ── MODE PICKER ──
+let _modeOpen = false;
+let _currentMode = 'orchestrate';
+function toggleModeMenu() {
+  _modeOpen = !_modeOpen;
+  document.getElementById('mode-dropdown').classList.toggle('hidden', !_modeOpen);
+}
+function closeModeMenu() {
+  _modeOpen = false;
+  document.getElementById('mode-dropdown').classList.add('hidden');
+}
+function selectMode(mode, label, el) {
+  _currentMode = mode;
+  document.getElementById('mode-chip-label').textContent = label;
+  document.querySelectorAll('.mode-dropdown-item').forEach(function(item) {
+    item.classList.remove('active');
+    item.setAttribute('aria-selected', 'false');
+  });
+  el.classList.add('active');
+  el.setAttribute('aria-selected', 'true');
+  closeModeMenu();
+}
+document.addEventListener('click', function(e) {
+  const chip = document.getElementById('mode-chip-btn');
+  const dd = document.getElementById('mode-dropdown');
+  if (chip && dd && !chip.contains(e.target) && !dd.contains(e.target)) {
+    closeModeMenu();
+  }
+});
+
+// ── GH MODAL ALIAS ──
+function closeGHModal() {
+  if (typeof ghModalCancel === 'function') ghModalCancel();
+  else document.getElementById('gh-modal-overlay').classList.remove('open');
+}
+
+// ── FIX: kaliLiveSendToChat uses #chat-input not #user-input ──
+document.addEventListener('DOMContentLoaded', function() {
+  const _origKaliSend = window.kaliLiveSendToChat;
+  window.kaliLiveSendToChat = function() {
+    const text = (window._kaliLiveAccum || []).join('\n');
+    if (!text) return;
+    const inp = document.getElementById('chat-input');
+    if (inp) {
+      inp.value = 'Analyze this Kali output and give me attack vectors:\n\n```\n' + text.slice(0, 4000) + '\n```';
+      inp.focus();
+      inp.dispatchEvent(new Event('input'));
+    }
+    if (typeof showToast === 'function') showToast('Output pasted into chat');
+  };
+});
+
+// ── EMPTY STATE HINT FILLER ──
+function insertHint(text) {
+  const inp = document.getElementById('chat-input');
+  if (!inp) return;
+  inp.value = text + ' ';
+  inp.focus();
+  inp.dispatchEvent(new Event('input'));
+  inp.setSelectionRange(inp.value.length, inp.value.length);
+}
+
+// ── BACKGROUND TASKS PANEL ──
+let _tasksPanelOpen = false;
+
+function toggleTasksPanel() {
+  _tasksPanelOpen = !_tasksPanelOpen;
+  const panel = document.getElementById('tasks-panel');
+  panel.classList.toggle('open', _tasksPanelOpen);
+  if (_tasksPanelOpen) loadTasksPanel();
+  document.addEventListener('click', _tasksOutsideClick);
+}
+
+function _tasksOutsideClick(e) {
+  const panel = document.getElementById('tasks-panel');
+  const btn = document.getElementById('tasks-header-btn');
+  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+    _tasksPanelOpen = false;
+    panel.classList.remove('open');
+    document.removeEventListener('click', _tasksOutsideClick);
+  }
+}
+
+async function loadTasksPanel() {
+  const body = document.getElementById('tasks-panel-body');
+  const countEl = document.getElementById('tasks-panel-count');
+  const badge = document.getElementById('tasks-running-badge');
+  const pmCount = document.getElementById('pm-tasks-count');
+  if (!body) return;
+
+  body.innerHTML = '<div class="tasks-panel-empty" style="padding:16px">Loading…</div>';
+  try {
+    const res = await fetch('/api/tasks');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const tasks = data.tasks || [];
+
+    // Also merge localStorage active task
+    let localTask = null;
+    try { localTask = JSON.parse(localStorage.getItem('nexus_active_task') || 'null'); } catch(_) {}
+    if (localTask && localTask.task_id && !tasks.find(t => t.task_id === localTask.task_id)) {
+      tasks.unshift({ task_id: localTask.task_id, message: localTask.msg || 'Task', status: 'running', started_at: localTask.ts });
+    }
+
+    const running = tasks.filter(t => t.status === 'running' || (!t.done && !t.stopped));
+    if (countEl) countEl.textContent = tasks.length ? '· ' + tasks.length + ' total' : '';
+    if (pmCount) pmCount.textContent = tasks.length ? tasks.length + ' tasks' : '';
+
+    // Update header badge
+    if (badge) {
+      if (running.length > 0) {
+        badge.textContent = running.length;
+        badge.classList.add('visible');
+      } else {
+        badge.classList.remove('visible');
+      }
+    }
+
+    if (!tasks.length) {
+      body.innerHTML = '<div class="tasks-panel-empty">No tasks yet.<br>Tasks survive page refresh &amp; server restarts.</div>';
+      return;
+    }
+
+    body.innerHTML = '';
+    tasks.forEach(function(t) {
+      const isDone = t.done || t.status === 'done';
+      const isStopped = t.stopped || t.status === 'stopped';
+      const isRunning = !isDone && !isStopped;
+      const dotCls = isRunning ? 'running' : (isStopped ? 'stopped' : 'done');
+      const ago = t.started_at ? _fmtAgo(t.started_at) : '';
+      const msg = (t.message || 'Task').slice(0, 80);
+
+      const item = document.createElement('div');
+      item.className = 'task-item';
+      item.innerHTML = `
+        <div class="task-item-row">
+          <div class="task-item-dot ${dotCls}"></div>
+          <div class="task-item-msg" title="${_esc(msg)}">${_esc(msg)}</div>
+          <div class="task-item-time">${ago}</div>
+        </div>
+        <div class="task-item-actions">
+          ${isRunning
+            ? `<button class="task-reconnect-btn gold" onclick="reconnectTaskPanel('${t.task_id}')">▶ Reconnect</button>
+               <button class="task-reconnect-btn" style="color:#f87171;border-color:rgba(248,113,113,0.25)" onclick="stopTaskPanel('${t.task_id}',this)">■ Stop</button>`
+            : `<button class="task-reconnect-btn" onclick="reconnectTaskPanel('${t.task_id}')">↩ View Output</button>`
+          }
+        </div>`;
+      body.appendChild(item);
+    });
+  } catch(err) {
+    body.innerHTML = '<div class="tasks-panel-empty" style="color:#f87171">Failed to load tasks.<br>' + err.message + '</div>';
+  }
+}
+
+function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _fmtAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  return Math.floor(diff/3600) + 'h ago';
+}
+
+function reconnectTaskPanel(task_id) {
+  toggleTasksPanel();
+  // Find or create a message bubble to reconnect into
+  setTimeout(function() {
+    if (typeof reconnectTaskFromHistory === 'function') {
+      // look for an existing reconnect bar
+      const bar = document.getElementById('reconnect-bar-' + task_id);
+      if (bar) {
+        const btn = bar.querySelector('.reconnect-btn');
+        if (btn) { btn.click(); return; }
+      }
+    }
+    // Use the internal active task reconnect
+    if (typeof _reconnectActiveTask === 'function') {
+      _reconnectActiveTask(task_id);
+    }
+  }, 200);
+}
+
+async function stopTaskPanel(task_id, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    await fetch('/api/tasks/' + task_id + '/stop', { method: 'POST' });
+    if (typeof showToast === 'function') showToast('Task stopped');
+    setTimeout(loadTasksPanel, 500);
+  } catch(_) { btn.disabled = false; btn.textContent = '■ Stop'; }
+}
+
+// ── GIT CLONE in + MENU ──
+async function pmCloneRepo() {
+  const urlInput = document.getElementById('pm-git-url');
+  const btn = document.getElementById('pm-git-clone-btn');
+  const statusEl = document.getElementById('pm-git-status');
+  const url = (urlInput.value || '').trim();
+  if (!url) { statusEl.style.color = '#f87171'; statusEl.textContent = 'Enter a GitHub URL first'; return; }
+
+  btn.disabled = true; btn.textContent = 'Cloning…';
+  statusEl.style.color = 'var(--text3)'; statusEl.textContent = 'Cloning repository…';
+
+  try {
+    const res = await fetch('/api/import-github', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      statusEl.style.color = '#f87171';
+      statusEl.textContent = '✗ ' + (data.error || 'Clone failed');
+      btn.disabled = false; btn.textContent = 'Clone';
+      return;
+    }
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '✓ Cloned ' + data.repo_name + ' (' + data.files_read + ' files, ' + data.total_size_kb + 'KB)';
+    btn.disabled = false; btn.textContent = 'Clone';
+    urlInput.value = '';
+
+    // Inject into chat with the repo context
+    const inp = document.getElementById('chat-input');
+    if (inp && data.context) {
+      if (typeof window._pendingFileContext !== 'undefined') {
+        window._pendingFileContext = data.context;
+      }
+      // Show toast and populate chat
+      if (typeof showToast === 'function') showToast('Repo cloned: ' + data.repo_name + ' — context loaded');
+      inp.placeholder = 'Repo "' + data.repo_name + '" loaded — ask me anything about it…';
+      setTimeout(function() { inp.placeholder = 'Message NEXUS…'; }, 8000);
+      inp.focus();
+    }
+    closePlusMenu();
+  } catch(err) {
+    statusEl.style.color = '#f87171';
+    statusEl.textContent = '✗ Network error: ' + err.message;
+    btn.disabled = false; btn.textContent = 'Clone';
+  }
+}
+
+// ── BACKGROUND WORKER KEEPALIVE ──
+// Pings the server every 28s so Gunicorn doesn't kill idle connections.
+// Also refreshes the task badge automatically.
+(function _bgWorker() {
+  async function heartbeat() {
+    try {
+      await fetch('/api/status', { cache: 'no-store' });
+    } catch(_) {}
+    // Update task badge without opening panel
+    try {
+      const r = await fetch('/api/tasks');
+      if (!r.ok) return;
+      const d = await r.json();
+      const tasks = d.tasks || [];
+      const running = tasks.filter(function(t) { return !t.done && !t.stopped; });
+      const badge = document.getElementById('tasks-running-badge');
+      const pmCount = document.getElementById('pm-tasks-count');
+      if (badge) {
+        if (running.length > 0) { badge.textContent = running.length; badge.classList.add('visible'); }
+        else { badge.classList.remove('visible'); }
+      }
+      if (pmCount) pmCount.textContent = tasks.length ? tasks.length + ' tasks' : '';
+    } catch(_) {}
+  }
+  // Run immediately on load, then every 28s
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(heartbeat, 1500);
+    setInterval(heartbeat, 28000);
+  });
+})();
+</script>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
