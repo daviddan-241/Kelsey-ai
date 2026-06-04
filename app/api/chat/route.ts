@@ -1,297 +1,284 @@
 /**
  * POST /api/chat
  * 
- * Free AI chat using:
- * - Groq (free, fast LLM) — llama-3.3-70b
- * - Google Gemini (free tier)
- * - HuggingFace (free inference)
- * - Pollinations (free, no key)
+ * One unified chat that UNDERSTANDS everything:
+ * - Social media personas, posts, content creation
+ * - Crypto, smart contracts, tokenomics
+ * - Image generation (triggers automatically when needed)
+ * - Code generation in any language
+ * - Website cloning
+ * - Deployment help
+ * - Kali Linux / security
+ * - Marketing, SEO, business
+ * - Anything else
  * 
- * Falls back through providers automatically.
+ * Free AI providers (auto-fallback):
+ * 1. Groq (fastest, free key) 
+ * 2. Pollinations (no key needed at all)
+ * 3. Gemini (free tier)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-// ─── Provider configs ──────────────────────────────────
+const SYSTEM_PROMPT = `You are Kelsey AI — an incredibly intelligent, capable assistant. You are the brain behind a premium AI workspace with 475 specialized agents.
 
-const PROVIDERS = {
-  groq: {
-    url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.3-70b-versatile',
-    getKey: () => process.env.GROQ_API_KEY,
-  },
-  gemini: {
-    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent`,
-    model: 'gemini-2.0-flash',
-    getKey: () => process.env.GEMINI_API_KEY,
-  },
-  pollinations: {
-    url: 'https://text.pollinations.ai/',
-    model: 'openai',
-    getKey: () => 'free', // No key needed
-  },
-  huggingface: {
-    url: 'https://api-inference.huggingface.co/models/meta-llama/Llama-3.3-70B-Instruct/v1/chat/completions',
-    model: 'meta-llama/Llama-3.3-70B-Instruct',
-    getKey: () => process.env.HF_API_KEY,
-  },
-};
+You understand and can do ANYTHING the user asks. Here are your capabilities — but you are NOT limited to these:
 
-// ─── System prompt ─────────────────────────────────────
+SOCIAL MEDIA & PERSONAS:
+- Create realistic, detailed AI personas with full bios, personality traits, content style, posting schedules
+- Generate social media posts for Instagram, TikTok, X/Twitter, Facebook, LinkedIn, YouTube
+- Write captions, hashtags, engagement hooks
+- Create 30-day content calendars
+- Design growth strategies, monetization plans
+- When asked to "create a girl" or "create a persona", provide FULL realistic details: name, age, location, bio, personality, aesthetic, content ideas, posting schedule, engagement tactics — make it feel REAL
+- Generate image prompts for creating profile pictures and content visuals
 
-const SYSTEM_PROMPT = `You are Kelsey AI — a premium, all-in-one AI workspace assistant. You are powerful, intelligent, and capable of anything.
+CRYPTO & WEB3:
+- Write Solidity smart contracts (ERC-20, ERC-721, DeFi protocols)
+- Design tokenomics models with distribution, vesting, utility
+- Analyze crypto markets and strategies
+- Create token launch plans
+- Build DeFi yield strategies
 
-Your capabilities:
-- **Code Generation**: Write production-quality code in any language (React, Python, Rust, Go, Swift, etc.)
-- **Full Applications**: Build complete web apps, mobile apps, APIs, backends
-- **Website Cloning**: Analyze and recreate any website
-- **Social Media**: Generate realistic social media content, captions, hashtags, posting schedules
-- **AI Personas**: Create detailed realistic personas with bios, post ideas, content calendars
-- **Crypto & Web3**: Smart contracts, tokenomics, DeFi analysis, wallet tools
-- **Image Prompts**: Generate detailed image generation prompts
-- **Video Scripts**: Create video scripts, storyboards, content plans
-- **Deployment**: Help deploy to Vercel, Render, Railway, Netlify
-- **Security**: Kali Linux commands, penetration testing guidance
-- **Data Analysis**: Process data, create visualizations, reports
-- **Marketing**: SEO, content strategy, ad copy, email campaigns
-- **Automation**: Workflows, bots, scripts, cron jobs
+IMAGE GENERATION:
+- When the user wants an image generated, output a special block:
+  [IMAGE: detailed description of the image to generate]
+  The system will automatically generate it.
+- For persona/profile pictures: describe realistic portraits with lighting, angle, style details
+- For social media content: describe the visual aesthetic
 
-Rules:
-- Always give COMPLETE, WORKING code — never placeholders
-- When building apps, include ALL files needed
-- Be detailed, thorough, and professional
-- If asked for social media content, make it realistic and engaging
-- If asked for crypto tools, provide working code
-- Format code with proper markdown code blocks
-- Think step by step for complex tasks`;
+CODE GENERATION:
+- Write COMPLETE, WORKING code in any language
+- Never use placeholders — every line must work
+- Include all files needed for a project
+- React, Next.js, Python, Rust, Go, Swift, Flutter, Solidity, etc.
 
-// ─── Route Handler ─────────────────────────────────────
+DEPLOYMENT:
+- Render, Vercel, Railway, Netlify, Docker configs
+- CI/CD pipelines
+- Environment setup
+
+SECURITY:
+- Kali Linux tools and commands
+- Penetration testing methodology
+- Security audits
+
+BUSINESS:
+- Business plans, pitch decks
+- SEO strategies
+- Marketing campaigns
+- Email sequences
+- Revenue models
+
+RULES:
+- Always give COMPLETE, detailed responses
+- When generating code: ALL files, NO placeholders, NO TODOs
+- When creating personas: make them feel REAL, not AI-generated
+- When writing social content: authentic, engaging, platform-specific
+- Think step by step for complex tasks
+- If you're not sure what the user wants, ask a clarifying question first
+- Format everything beautifully with markdown`;
 
 export async function POST(req: NextRequest) {
-  const { messages, model, provider: requestedProvider } = await req.json();
+  const { messages, provider: requestedProvider } = await req.json();
 
-  try {
-    // Try providers in order
-    const providerOrder = ['groq', 'pollinations', 'gemini', 'huggingface'];
-    
-    if (requestedProvider && requestedProvider !== 'auto') {
-      providerOrder.unshift(requestedProvider);
+  // Provider order: Groq (fastest) → Pollinations (always works) → Gemini
+  const providers: { name: string; test: () => boolean; run: () => Promise<Response> }[] = [
+    {
+      name: 'groq',
+      test: () => !!process.env.GROQ_API_KEY,
+      run: () => streamOpenAICompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        process.env.GROQ_API_KEY!,
+        'llama-3.3-70b-versatile'
+      ),
+    },
+    {
+      name: 'pollinations',
+      test: () => true, // Always works, no key needed
+      run: () => streamPollinations(),
+    },
+    {
+      name: 'gemini',
+      test: () => !!process.env.GEMINI_API_KEY,
+      run: () => streamGemini(),
+    },
+  ];
+
+  // If user requested specific provider, try it first
+  if (requestedProvider && requestedProvider !== 'auto') {
+    const preferred = providers.find(p => p.name === requestedProvider);
+    if (preferred) providers.unshift(preferred);
+  }
+
+  for (const provider of providers) {
+    if (!provider.test()) continue;
+    try {
+      return await provider.run();
+    } catch (e: any) {
+      console.error(`Provider ${provider.name} failed:`, e.message);
+      continue;
     }
+  }
 
-    for (const providerName of providerOrder) {
-      const provider = PROVIDERS[providerName as keyof typeof PROVIDERS];
-      if (!provider) continue;
-      
-      const key = provider.getKey();
-      if (!key || key === 'free') {
-        // pollinations works without key
-        if (providerName !== 'pollinations') continue;
-      }
+  return new Response(
+    `data: ${JSON.stringify({ delta: '⚠️ No AI providers available. The app works with Pollinations.ai for free — no setup needed. Please check your connection.' })}\n\ndata: ${JSON.stringify({ done: true })}\n\n`,
+    { headers: { 'Content-Type': 'text/event-stream' } }
+  );
 
-      try {
-        if (providerName === 'groq' || providerName === 'huggingface') {
-          return await streamGroq(provider, key!, messages, model);
-        } else if (providerName === 'gemini') {
-          return await streamGemini(provider, key!, messages);
-        } else if (providerName === 'pollinations') {
-          return await streamPollinations(messages, model);
-        }
-      } catch (e: any) {
-        console.error(`Provider ${providerName} failed:`, e.message);
-        continue; // Try next provider
-      }
+  // ─── Helper: Build messages ────────────────────────
+  async function streamOpenAICompatible(url: string, key: string, model: string): Promise<Response> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 8192,
+      }),
+    });
+    if (!response.ok) throw new Error(`${response.status}`);
+    return transformOpenAIStream(response);
+  }
+
+  async function streamPollinations(): Promise<Response> {
+    const response = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' } as Record<string, string>,
+      body: JSON.stringify({
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+        model: 'openai',
+        stream: true,
+      }),
+    });
+    if (!response.ok) throw new Error(`${response.status}`);
+
+    // Pollinations returns plain text or SSE depending on mode
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream') || contentType.includes('text/plain')) {
+      return transformPlainTextStream(response);
     }
+    return transformOpenAIStream(response);
+  }
 
-    // All providers failed — return a helpful error
-    return new Response(
-      `data: ${JSON.stringify({ event: 'error', error: 'All AI providers failed. Add a free Groq API key at console.groq.com' })}\n\n`,
-      { headers: { 'Content-Type': 'text/event-stream' } }
-    );
-
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  async function streamGemini(): Promise<Response> {
+    const key = process.env.GEMINI_API_KEY!;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`;
+    const geminiMsgs = messages.map((m: any) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+          { role: 'model', parts: [{ text: 'Understood.' }] },
+          ...geminiMsgs,
+        ],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+      }),
+    });
+    if (!response.ok) throw new Error(`${response.status}`);
+    return transformGeminiStream(response);
   }
 }
 
-// ─── Groq / HuggingFace (OpenAI-compatible) ────────────
+// ─── Stream Transformers ───────────────────────────────
 
-async function streamGroq(provider: typeof PROVIDERS.groq, key: string, messages: any[], model?: string) {
-  const response = await fetch(provider.url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: model || provider.model,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages,
-      ],
-      stream: true,
-      temperature: 0.7,
-      max_tokens: 8192,
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Groq API error: ${response.status}`);
-
-  // Transform OpenAI stream to our SSE format
-  const encoder = new TextEncoder();
+function transformOpenAIStream(upstream: Response): Response {
+  const enc = new TextEncoder();
   const stream = new ReadableStream({
-    async start(controller) {
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'start' })}\n\n`));
-
+    async start(ctrl) {
+      const reader = upstream.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'done' })}\n\n`));
-              break;
+          if (!line.startsWith('data: ')) continue;
+          const d = line.slice(6).trim();
+          if (d === '[DONE]') { ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ done: true })}\n\n`)); break; }
+          try {
+            const p = JSON.parse(d);
+            const delta = p.choices?.[0]?.delta?.content;
+            if (delta) ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ delta })}\n\n`));
+          } catch {}
+        }
+      }
+      ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+      ctrl.close();
+    },
+  });
+  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
+}
+
+function transformPlainTextStream(upstream: Response): Response {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const reader = upstream.body!.getReader();
+      const dec = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = dec.decode(value, { stream: true });
+        // Try to parse as SSE first
+        if (text.includes('"delta"') || text.includes('"choices"')) {
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const p = JSON.parse(line.slice(6));
+                const delta = p.choices?.[0]?.delta?.content || p.delta;
+                if (delta) ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ delta })}\n\n`));
+              } catch {}
             }
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'token', delta })}\n\n`));
-              }
-            } catch {}
           }
+        } else {
+          // Plain text — chunk it
+          ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
         }
       }
-      controller.close();
+      ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+      ctrl.close();
     },
   });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
+  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
 }
 
-// ─── Gemini ────────────────────────────────────────────
-
-async function streamGemini(provider: typeof PROVIDERS.gemini, key: string, messages: any[]) {
-  const url = `${provider.url}?key=${key}&alt=sse`;
-  
-  const geminiMessages = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-        { role: 'model', parts: [{ text: 'Understood. I am Kelsey AI, ready to help.' }] },
-        ...geminiMessages,
-      ],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Gemini error: ${response.status}`);
-
-  const encoder = new TextEncoder();
+function transformGeminiStream(upstream: Response): Response {
+  const enc = new TextEncoder();
   const stream = new ReadableStream({
-    async start(controller) {
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'start' })}\n\n`));
-
+    async start(ctrl) {
+      const reader = upstream.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const delta = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (delta) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'token', delta })}\n\n`));
-              }
-            } catch {}
-          }
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const p = JSON.parse(line.slice(6));
+            const delta = p.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (delta) ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ delta })}\n\n`));
+          } catch {}
         }
       }
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'done' })}\n\n`));
-      controller.close();
+      ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+      ctrl.close();
     },
   });
-
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
-  });
-}
-
-// ─── Pollinations (FREE, no key) ───────────────────────
-
-async function streamPollinations(messages: any[], model?: string) {
-  const response = await fetch('https://text.pollinations.ai/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages,
-      ],
-      model: model || 'openai',
-      stream: true,
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Pollinations error: ${response.status}`);
-
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'start' })}\n\n`));
-
-      if (response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const text = decoder.decode(value, { stream: true });
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'token', delta: text })}\n\n`));
-        }
-      } else {
-        const text = await response.text();
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'token', delta: text })}\n\n`));
-      }
-
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: 'done' })}\n\n`));
-      controller.close();
-    },
-  });
-
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
-  });
+  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
 }
