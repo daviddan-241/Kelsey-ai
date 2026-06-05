@@ -1,68 +1,72 @@
-# Kelsey AI — Premium AI Workspace
+# Kelsey AI — Your AI Workspace
 
-> **475 AI agents** × **Free AI** × **Deploy on Render** — zero config needed
+> One chat. 475 agents. Understands everything. Creates anything. 100% free.
 
-## 🚀 Deploy to Render (1 Click)
+## ✨ What It Does
 
-1. Push this repo to GitHub
-2. Go to [render.com](https://render.com) → New → Web Service
-3. Connect your repo
-4. It auto-detects `render.yaml`
-5. Done! Your app is live.
+| You say | It does (FOR REAL) |
+|---------|-------------------|
+| "Create a girl for socials" | Full persona with bio, posts, calendar + **real AI-generated profile pictures** |
+| "Generate an image of X" | **Real image** appears in chat, downloadable |
+| "Build me an app" | Complete working code, all files |
+| "Crypto prices" | **Live CoinGecko data** in the UI |
+| "Smart contract" | Full Solidity, deployable |
+| "Content calendar" | 30 days with captions, hashtags, images |
+| "Deploy to Render" | Complete render.yaml + instructions |
+| **Anything else** | AI understands and responds |
 
-**Build Command:** `npm install && npm run build`
-**Start Command:** `npm start`
+## 🔥 Real Features
 
-## 🆓 Works Without API Keys
+- **Real AI chat** — Pollinations.ai (free forever, no key) + Groq + Gemini fallback
+- **Real image generation** — Inline in chat, downloadable, lightbox view
+- **Real voice input** — Web Speech API (click mic, speak, it types)
+- **Real text-to-speech** — AI reads responses aloud
+- **Real file upload** — Drag & drop or paste images/files
+- **Real crypto data** — Live CoinGecko market prices
+- **Real streaming** — Token-by-token response streaming
+- **Real persistence** — Chat history, settings saved to localStorage
+- **Real export** — Download any chat as Markdown
+- **Real dark mode** — Full light/dark theme
+- **Real code highlighting** — Syntax highlighting + copy button for every code block
 
-Kelsey AI uses **Pollinations.ai** by default — 100% free, no signup, no API key needed.
+## 🚀 Deploy
 
-For **faster, better** responses, add optional free keys:
-- **Groq** (free) → [console.groq.com](https://console.groq.com)
-- **Gemini** (free) → [aistudio.google.com](https://aistudio.google.com)
+### Render (Free)
+1. Go to [dashboard.render.com](https://dashboard.render.com)
+2. New → Web Service → Connect `Kelsey-ai` repo
+3. Build: `npm install && npm run build`
+4. Start: `npm start`
+5. Optional env vars: `GROQ_API_KEY`, `GEMINI_API_KEY`
 
-## ✨ Features
-
-- 💬 **AI Chat** — Streaming responses, code generation, anything
-- 🎨 **Image Generation** — Free via Pollinations.ai
-- 📱 **Social Media Tools** — Personas, posts, calendars, hashtags
-- 💰 **Crypto Tools** — Live market data, smart contracts, tokenomics
-- 🤖 **475 Agents** — 20 categories of specialists
-- 🚀 **Deployment** — Help deploying to Render, Vercel, Railway
-- 💻 **Code Workspace** — Generate full applications in any language
-- ⚙️ **Settings** — Dark mode, API keys, preferences
-
-## 🛠️ Local Development
-
+### Local
 ```bash
 npm install
 npm run dev
 # Open http://localhost:3000
 ```
 
-## 📁 Structure
+## 🛠 Tech Stack
 
-```
-app/
-├── page.tsx              Main app (all-in-one)
-├── layout.tsx            Root layout
-├── globals.css           Design system
-├── api/
-│   ├── chat/route.ts     AI chat (Groq/Pollinations/Gemini)
-│   ├── generate/route.ts Image generation (Pollinations)
-│   ├── social/route.ts   Social media tools
-│   ├── crypto/route.ts   Crypto & Web3 tools
-│   └── tools/route.ts    General AI tools
-render.yaml               Render deployment
-```
+- **Next.js 15** — React framework
+- **Pollinations.ai** — Free AI chat + image generation
+- **Groq** — Fast AI (optional free key)
+- **Gemini** — Google AI (optional free key)
+- **CoinGecko** — Free crypto market data
+- **Web Speech API** — Voice input/output
+- **Tailwind CSS 4** — Styling
+- **Lucide React** — Icons
 
-## Free AI Providers Used
+## 🎨 Design
 
-| Provider | Use | Key Needed |
-|---|---|---|
-| Pollinations.ai | Chat + Images | ❌ None |
-| Groq | Fast chat | Optional (free) |
-| Google Gemini | Multimodal | Optional (free) |
-| CoinGecko | Crypto prices | ❌ None |
+- Background: `#FAF9F5`
+- Accent: `#D97757`
+- Font: Inter
+- 70% Claude elegance + 20% Apple + 10% futuristic
 
-Built with ❤️ by [daviddan-241](https://github.com/daviddan-241)
+## 📱 iOS App
+
+See `/nova-ios/` for the companion iOS app (Nova AI) built with React Native/Expo.
+
+---
+
+Made with ✨ by Kelsey AI
